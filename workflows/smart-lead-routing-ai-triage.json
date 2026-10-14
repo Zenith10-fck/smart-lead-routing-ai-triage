@@ -1,0 +1,472 @@
+{
+  "name": "Smart Lead Routing & AI Triage",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "incoming-lead",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -608,
+        -48
+      ],
+      "id": "45b475ae-05ce-4f09-96aa-caffb695a88e",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "75b075d7-c748-459a-a8d2-bc4ff715a229",
+              "leftValue": "={{ JSON.parse($json.text).intent_level }}",
+              "rightValue": "High Intent",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -32,
+        -80
+      ],
+      "id": "20f1664e-ad4f-4b6f-9771-a0fa6ac0a4f3",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "=🚨 <b>NEW HIGH INTENT LEAD</b> 🚨\n\n<b>Name:</b> {{ $('Webhook').item.json.body.full_name }}\n<b>Email:</b> {{ $('Webhook').item.json.body.email }}\n<b>Status:</b> High Intent 🔥\n\n<b>Message:</b> \"{{ $('Webhook').item.json.body.message }}\"\n\n<i>Please contact immediately!</i>",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        -80
+      ],
+      "id": "5fbda153-9d46-4c90-9501-900d185d116f",
+      "name": "Send a text message",
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_ME",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an AI Sales Assistant. Evaluate the intent level of the provided text based on these rules: - Assign \"High Intent\" if the user has a clear project, mentions a budget, or has an urgent timeline. - Assign \"Low Intent\" if the message is vague, just asking general questions, or a greeting.  CRITICAL INSTRUCTION: You MUST respond ONLY with a raw JSON object. NO markdown, NO backticks, NO \"```json\". Start directly with { and end with }.  Format exactly like this: {   \"intent_level\": \"High Intent\" }"
+            },
+            {
+              "type": "HumanMessagePromptTemplate",
+              "message": "=Here is the lead message:     \"{{ $json.body.message }}\""
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -384,
+        -48
+      ],
+      "id": "4789cd95-7255-4401-aa37-fa5908a0165c",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        80
+      ],
+      "id": "f6edc18d-14ac-4de4-85a9-7a691a150531",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "REPLACE_ME",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appXXXXXXXXXXXXXX",
+          "mode": "list",
+          "cachedResultName": "Base Airtable",
+          "cachedResultUrl": "https://airtable.com/appXXXXXXXXXXXXXX"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblXXXXXXXXXXXXXX",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appXXXXXXXXXXXXXX/tblXXXXXXXXXXXXXX"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $('Webhook').item.json.body.full_name }}",
+            "Email Address": "={{ $('Webhook').item.json.body.full_name }}",
+            "Intent Level": "High Intent"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email Address",
+              "displayName": "Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Intent Level",
+              "displayName": "Intent Level",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "High Intent",
+                  "value": "High Intent"
+                },
+                {
+                  "name": "Low Intent",
+                  "value": "Low Intent"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Submission Date",
+              "displayName": "Submission Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        144,
+        -80
+      ],
+      "id": "675e0192-8250-4966-beef-2e6d04ad388d",
+      "name": "Create a record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REPLACE_ME",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appXXXXXXXXXXXXXX",
+          "mode": "list",
+          "cachedResultName": "Base Airtable",
+          "cachedResultUrl": "https://airtable.com/appXXXXXXXXXXXXXX"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblXXXXXXXXXXXXXX",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appXXXXXXXXXXXXXX/tblXXXXXXXXXXXXXX"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $('Webhook').item.json.body.full_name }}",
+            "Intent Level": "Low Intent",
+            "Email Address": "={{ $('Webhook').item.json.body.email }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email Address",
+              "displayName": "Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Intent Level",
+              "displayName": "Intent Level",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "High Intent",
+                  "value": "High Intent"
+                },
+                {
+                  "name": "Low Intent",
+                  "value": "Low Intent"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Submission Date",
+              "displayName": "Submission Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        144,
+        128
+      ],
+      "id": "371e4a6d-b833-4651-a947-9d5b766f11cf",
+      "name": "Create a record1",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REPLACE_ME",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "DATA INGESTION (REAL-TIME)",
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -688,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "249ced0e-6520-4531-920d-92f951562314",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "AI-POWERED LEAD QUALIFICATION",
+        "height": 288,
+        "width": 320
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -416,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "bd7a2f4b-fffc-4492-a5b7-0a441fe34d12",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "3. HIGH-INTENT ROUTING (PRIORITY)",
+        "height": 208,
+        "width": 560,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -64,
+        -128
+      ],
+      "typeVersion": 1,
+      "id": "66905ffe-b1c4-4bdc-be91-1df0cb37e263",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "LOW-INTENT ARCHIVING",
+        "height": 192,
+        "width": 288,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        48,
+        96
+      ],
+      "typeVersion": 1,
+      "id": "d51cc243-9c4e-47c5-87fd-b6b4c1e04123",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "This workflow is securely protected by a separate Global Error Handler workflow. \nAny API failures or node crashes will instantly notify the IT/Admin team via Telegram to ensure 100% SLA compliance.",
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -688,
+        96
+      ],
+      "typeVersion": 1,
+      "id": "4bf04f8f-7121-41ae-b857-0bdcb9733cb9",
+      "name": "Sticky Note4"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a record1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a record": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "e8tJir2zqUjHHQdP",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "active": false
+}
